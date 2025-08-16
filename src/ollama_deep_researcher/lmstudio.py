@@ -62,9 +62,12 @@ class ChatLMStudio(ChatOpenAI):
         """Generate a chat response using LMStudio's OpenAI-compatible API."""
 
         if self.format == "json":
-            # LM Studio expects 'json_schema' or 'text'. Use text and extract JSON ourselves.
-            kwargs["response_format"] = {"type": "text"}
-            logger.info(f"Using response_format={kwargs['response_format']}")
+            logger.info(
+                "JSON mode requested: leaving response_format unset (LM Studio)."
+            )
+            # # LM Studio expects 'json_schema' or 'text'. Use text and extract JSON ourselves.
+            # kwargs["response_format"] = {"type": "text"}
+            # logger.info(f"Using response_format={kwargs['response_format']}")
 
         # if self.format == "json":
         #     # Set response_format for JSON mode
