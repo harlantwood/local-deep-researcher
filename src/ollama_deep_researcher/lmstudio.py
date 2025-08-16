@@ -62,9 +62,14 @@ class ChatLMStudio(ChatOpenAI):
         """Generate a chat response using LMStudio's OpenAI-compatible API."""
 
         if self.format == "json":
-            # Set response_format for JSON mode
-            kwargs["response_format"] = {"type": "json_object"}
+            # LM Studio expects 'json_schema' or 'text'. Use text and extract JSON ourselves.
+            kwargs["response_format"] = {"type": "text"}
             logger.info(f"Using response_format={kwargs['response_format']}")
+
+        # if self.format == "json":
+        #     # Set response_format for JSON mode
+        #     kwargs["response_format"] = {"type": "json_object"}
+        #     logger.info(f"Using response_format={kwargs['response_format']}")
 
         # Call the parent class's _generate method
         result = super()._generate(messages, stop, run_manager, **kwargs)
@@ -73,7 +78,14 @@ class ChatLMStudio(ChatOpenAI):
         if self.format == "json" and result.generations:
             try:
                 # Get the raw text
-                raw_text = result.generations[0][0].text
+                gen = result.generations[0]  # ChatGeneration
+                raw_text = getattr(gen, "text", None)
+                if not raw_text and hasattr(gen, "message"):
+                    raw_text = getattr(gen.message, "content", "")
+                raw_text = raw_text or ""
+
+                # raw_text = result.generations[0][0].text
+
                 logger.info(f"Raw model response: {raw_text}")
 
                 # Try to find JSON in the response
@@ -87,7 +99,11 @@ class ChatLMStudio(ChatOpenAI):
                     json.loads(json_text)
                     logger.info(f"Cleaned JSON: {json_text}")
                     # Update the generation with the cleaned JSON
-                    result.generations[0][0].text = json_text
+                    if hasattr(gen, "text"):
+                        gen.text = json_text  # type: ignore[attr-defined]
+                    if hasattr(gen, "message") and hasattr(gen.message, "content"):
+                        gen.message.content = json_text
+
                 else:
                     logger.warning("Could not find JSON in response")
             except Exception as e:
