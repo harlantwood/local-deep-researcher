@@ -149,6 +149,16 @@ def generate_query(state: SummaryState, config: RunnableConfig):
         Dictionary with state update, including search_query key containing the generated query
     """
 
+    # Validate input early so we don't generate nonsense queries
+    if (
+        not state.research_topic
+        or str(state.research_topic).strip() == ""
+        or str(state.research_topic).strip().lower() == "none"
+    ):
+        raise ValueError(
+            "Missing 'research_topic' in input. Provide a non-empty research topic."
+        )
+
     # Format the prompt
     current_date = get_current_date()
     formatted_prompt = query_writer_instructions.format(
